@@ -12,6 +12,7 @@ import {
     GET_NAVIGATIONS,
     UPDATE_PRODUCT_COMPANIES,
     UPDATE_PRODUCT_NAVIGATIONS,
+    SET_PRODUCTS_SETTINGS_CONTEXT,
 } from './actions';
 
 import { INIT_SECTIONS, SELECT_SECTION } from 'features/sections/actions';
@@ -28,6 +29,7 @@ const initialState = {
     companies: [],
     navigations: [],
     sections: sectionsReducer(),
+    productSettingsContext: 'products'
 };
 
 export default function productReducer(state = initialState, action) {
@@ -38,6 +40,7 @@ export default function productReducer(state = initialState, action) {
             is_enabled: true,
             name: '',
             description: '',
+            is_section_filter: state.productSettingsContext === 'section_filters',
         };
 
         return {
@@ -62,6 +65,7 @@ export default function productReducer(state = initialState, action) {
             name: '',
             description: '',
             product_type: state.sections.active,
+            is_section_filter: state.productSettingsContext === 'section_filters',
         };
 
         return {...state, productToEdit, errors: null};
@@ -128,6 +132,8 @@ export default function productReducer(state = initialState, action) {
     case SELECT_SECTION:
         return {...state, sections: sectionsReducer(state.sections, action)};
 
+    case SET_PRODUCTS_SETTINGS_CONTEXT:
+        return {...state, productSettingsContext: action.data}
     default:
         return state;
     }

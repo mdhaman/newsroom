@@ -2,25 +2,28 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import TextInput from 'components/TextInput';
 import CheckboxInput from 'components/CheckboxInput';
+import {get} from 'lodash';
 
 import { gettext, getProductQuery } from 'utils';
 import EditPanel from '../../components/EditPanel';
 import {sectionsPropType} from '../../features/sections/types';
+import {isProducts, getFilterType} from '../util';
 
 class EditProduct extends React.Component {
     constructor(props) {
         super(props);
         this.handleTabClick = this.handleTabClick.bind(this);
-        this.getPoductTestButton = this.getPoductTestButton.bind(this);
+        this.getProductTestButton = this.getProductTestButton.bind(this);
         this.state = {
             activeTab: 'product-details',
             activeProduct: props.product._id,
         };
 
+        const productTabLabel = isProducts(this.props.settingsContext) ? gettext('Product') : gettext('Section Filter');
         this.tabs = [
-            {label: gettext('Product'), name: 'product-details'},
-            {label: gettext('Companies'), name: 'companies'},
-            {label: gettext('Navigation'), name: 'navigations'}
+            {label: productTabLabel, name: 'product-details', condition: (ctx) => true},
+            {label: gettext('Companies'), name: 'companies', condition: isProducts},
+            {label: gettext('Navigation'), name: 'navigations', condition: isProducts}
         ];
     }
 
@@ -34,13 +37,15 @@ class EditProduct extends React.Component {
         }
     }
 
-    getPoductTestButton(product) {
+    getProductTestButton(product) {
         const q = getProductQuery(product);
+        const filterType =  getFilterType(this.props.settingsContext);
 
         if (q) {
             return (
                 <a href={`/wire?q=${q}`} target="_blank"
-                    className='btn btn-outline-secondary float-right'>{gettext('Test product')}
+                    className='btn btn-outline-secondary float-right'>
+                    {gettext('Test {{filterType}}', {filterType:filterType})}
                 </a>
             );
         }
@@ -63,7 +68,7 @@ class EditProduct extends React.Component {
                 </div>
 
                 <ul className='nav nav-tabs'>
-                    {this.tabs.map((tab) => (
+                    {this.tabs.map((tab) => tab.condition(this.props.settingsContext) && (
                         <li key={tab.name} className='nav-item'>
                             <a
                                 name={tab.name}
@@ -127,10 +132,9 @@ class EditProduct extends React.Component {
                                         label={gettext('Enabled')}
                                         value={this.props.product.is_enabled}
                                         onChange={this.props.onChange}/>
-
                                 </div>
                                 <div className='list-item__preview-footer'>
-                                    {this.getPoductTestButton(this.props.product)}
+                                    {this.getProductTestButton(this.props.product)}
                                     <input
                                         type='button'
                                         className='btn btn-outline-primary'
@@ -185,6 +189,7 @@ EditProduct.propTypes = {
     fetchNavigations: PropTypes.func.isRequired,
     products: PropTypes.arrayOf(PropTypes.object),
     sections: sectionsPropType,
+    settingsContext: PropTypes.string.isRequired
 };
 
 export default EditProduct;

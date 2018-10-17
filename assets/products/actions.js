@@ -1,6 +1,7 @@
 import { gettext, notify, errorHandler } from 'utils';
 import server from 'server';
 import { initSections } from 'features/sections/actions';
+import { getActionMessage, isSectionFilters, isProducts} from './util';
 
 
 export const SELECT_PRODUCT = 'SELECT_PRODUCT';
@@ -63,6 +64,10 @@ export function setError(errors) {
     return {type: SET_ERROR, errors};
 }
 
+export const SET_PRODUCTS_SETTINGS_CONTEXT = 'SET_PRODUCTS_SETTINGS_CONTEXT';
+export function setProductsSettingsContext(data) {
+    return {type: SET_PRODUCTS_SETTINGS_CONTEXT, data};
+}
 
 /**
  * Fetches products
@@ -72,8 +77,10 @@ export function fetchProducts() {
     return function (dispatch, getState) {
         dispatch(queryProducts());
         const query = getState().query || '';
+        const isSectionFilter = isSectionFilters(getState().productSettingsContext);
 
-        return server.get(`/products/search?q=${query}`)
+
+        return server.get(`/products/search?q=${query}&where={"is_section_filter":${isSectionFilter}}`)
             .then((data) => dispatch(getProducts(data)))
             .catch((error) => errorHandler(error, dispatch, setError));
     };
@@ -89,13 +96,14 @@ export function postProduct() {
 
         const product = getState().productToEdit;
         const url = `/products/${product._id ? product._id : 'new'}`;
+        const context = getState().productSettingsContext;
 
         return server.post(url, product)
             .then(function() {
                 if (product._id) {
-                    notify.success(gettext('Product updated successfully'));
+                    notify.success(getActionMessage(context, gettext('updated')));
                 } else {
-                    notify.success(gettext('Product created successfully'));
+                    notify.success(getActionMessage(context, gettext('created')));
                 }
                 dispatch(fetchProducts());
             })
@@ -114,10 +122,11 @@ export function deleteProduct() {
 
         const product = getState().productToEdit;
         const url = `/products/${product._id}`;
+        const context = getState().productSettingsContext;
 
         return server.del(url)
             .then(() => {
-                notify.success(gettext('Product deleted successfully'));
+                notify.success(getActionMessage(context, gettext('deleted')));
                 dispatch(fetchProducts());
             })
             .catch((error) => errorHandler(error, dispatch, setError));
@@ -146,9 +155,11 @@ export function fetchCompanies() {
 export function saveCompanies(companies) {
     return function (dispatch, getState) {
         const product = getState().productToEdit;
+        const context = getState().productSettingsContext;
+
         return server.post(`/products/${product._id}/companies`, {companies})
             .then(() => {
-                notify.success(gettext('Product updated successfully'));
+                notify.success(getActionMessage(context, gettext('updated')));
                 dispatch(updateProductCompanies(product, companies));
             })
             .catch((error) => errorHandler(error, dispatch, setError));
@@ -176,9 +187,10 @@ export function fetchNavigations() {
 export function saveNavigations(navigations) {
     return function (dispatch, getState) {
         const product = getState().productToEdit;
+        const context = getState().productSettingsContext;
         return server.post(`/products/${product._id}/navigations`, {navigations})
             .then(() => {
-                notify.success(gettext('Product updated successfully'));
+                notify.success(getActionMessage(context, gettext('updated')));
                 dispatch(updateProductNavigations(product, navigations));
             })
             .catch((error) => errorHandler(error, dispatch, setError));
@@ -191,5 +203,6 @@ export function initViewData(data) {
         dispatch(getCompanies(data.companies));
         dispatch(getNavigations(data.navigations));
         dispatch(initSections(data.sections));
+        dispatch(setProductsSettingsContext(data.settings_context));
     };
 }

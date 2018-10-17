@@ -10,15 +10,35 @@ from newsroom.auth.decorator import admin_only
 from newsroom.products import blueprint
 from newsroom.utils import get_json_or_400, get_entity_or_404
 from newsroom.utils import query_resource
+from .products import SETTINGS_CONTEXT
 
 
-def get_settings_data():
-    return {
-        'products': list(query_resource('products', max_results=200)),
-        'navigations': list(query_resource('navigations', max_results=200)),
-        'companies': list(query_resource('companies', max_results=200)),
+def get_products_settings_data():
+    return get_settings_data(SETTINGS_CONTEXT.PRODUCTS)
+
+
+def get_section_filters_settings_data():
+    return get_settings_data(SETTINGS_CONTEXT.SECTION_FILTERS)
+
+
+def get_settings_data(context):
+    """Get the settings data for products or section filter
+
+    :param context
+    """
+    lookup = {'is_section_filter': context == SETTINGS_CONTEXT.SECTION_FILTERS}
+
+    data = {
+        'products': list(query_resource('products', lookup=lookup)),
         'sections': current_app.sections,
+        'settings_context': context,
+        'navigations': [],
+        'companies': []
     }
+    if context == SETTINGS_CONTEXT.PRODUCTS:
+        data['navigations'] = list(query_resource('navigations')),
+        data['companies'] = list(query_resource('companies')),
+    return data
 
 
 @blueprint.route('/products', methods=['GET'])
@@ -75,7 +95,8 @@ def edit(id):
         'sd_product_id': data.get('sd_product_id'),
         'query': data.get('query'),
         'is_enabled': data.get('is_enabled'),
-        'product_type': data.get('product_type', 'wire')
+        'product_type': data.get('product_type', 'wire'),
+        'is_section_filter': data.get('is_section_filter', False)
     }
 
     validation = validate_product(updates)

@@ -12,6 +12,7 @@ import { gettext } from 'utils';
 
 import SectionSwitch from 'features/sections/SectionSwitch';
 import { sectionsPropType } from 'features/sections/types';
+import {getFilterType} from '../util';
 
 class ProductsApp extends React.Component {
     constructor(props, context) {
@@ -19,12 +20,14 @@ class ProductsApp extends React.Component {
     }
 
     render() {
+        const filterType = getFilterType(this.props.settingsContext);
+
         return [
             <ListBar key="bar"
                 onNewItem={this.props.newProduct}
                 setQuery={this.props.setQuery}
                 fetch={this.props.fetchProducts}
-                buttonName={gettext('Product')}
+                buttonName={filterType}
             >
                 <SectionSwitch
                     sections={this.props.sections}
@@ -43,11 +46,13 @@ ProductsApp.propTypes = {
     fetchProducts: PropTypes.func,
     setQuery: PropTypes.func,
     newProduct: PropTypes.func,
+    settingsContext: PropTypes.string.isRequired
 };
 
 const mapStateToProps = (state) => ({
     sections: state.sections.list,
     activeSection: state.sections.active,
+    settingsContext: state.productSettingsContext,
 });
 
 const mapDispatchToProps = {

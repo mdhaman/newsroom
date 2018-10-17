@@ -20,6 +20,7 @@ import {
 import {gettext} from 'utils';
 import { get } from 'lodash';
 import {sectionsPropType} from '../../features/sections/types';
+import {getFilterType, isProducts} from '../util';
 
 class Products extends React.Component {
     constructor(props, context) {
@@ -33,9 +34,10 @@ class Products extends React.Component {
     isFormValid() {
         let valid = true;
         let errors = {};
+        const filterType = getFilterType(this.props.settingsContext);
 
         if (!this.props.productToEdit.name) {
-            errors.name = ['Please provide product name'];
+            errors.name = [gettext(`Please provide ${filterType} name`)];
             valid = false;
         }
 
@@ -55,8 +57,14 @@ class Products extends React.Component {
 
     deleteProduct(event) {
         event.preventDefault();
+        const filterType = getFilterType(this.props.settingsContext);
 
-        if (confirm(gettext('Would you like to delete product: {{name}}', {name: this.props.productToEdit.name}))) {
+        if (confirm(
+            gettext(
+                'Would you like to delete {{filterType}}: {{name}}',
+                {name: this.props.productToEdit.name, filterType: filterType}
+            )
+        )) {
             this.props.deleteProduct();
         }
     }
@@ -102,6 +110,7 @@ class Products extends React.Component {
                         saveCompanies={this.props.saveCompanies}
                         saveNavigations={this.props.saveNavigations}
                         sections={getActiveSection()}
+                        settingsContext={this.props.settingsContext}
                     />
                 }
             </div>
@@ -133,6 +142,7 @@ Products.propTypes = {
     sections: sectionsPropType,
     saveCompanies: PropTypes.func.isRequired,
     saveNavigations: PropTypes.func.isRequired,
+    settingsContext: PropTypes.string.isRequired,
 };
 
 const mapStateToProps = (state) => ({
@@ -147,6 +157,7 @@ const mapStateToProps = (state) => ({
     navigations: state.navigations,
     errors: state.errors,
     sections: state.sections.list,
+    settingsContext: state.productSettingsContext,
 });
 
 const mapDispatchToProps = (dispatch) => ({

@@ -5,6 +5,7 @@ from bson import ObjectId
 from flask_babel import gettext
 
 from newsroom.utils import query_resource, get_entity_dict
+from newsroom.products.products import get_section_filters_dict
 
 
 def get_company_saved_searches():
@@ -91,6 +92,7 @@ def get_product_stories():
 
     results = []
     products = query_resource('products')
+    section_filters = get_section_filters_dict()
 
     for product in products:
         product_stories = {
@@ -98,7 +100,7 @@ def get_product_stories():
             'name': product.get('name'),
             'is_enabled': product.get('is_enabled'),
         }
-        counts = superdesk.get_resource_service('wire_search').get_product_item_report(product)
+        counts = superdesk.get_resource_service('wire_search').get_product_item_report(product, section_filters)
         for key, value in counts.hits['aggregations'].items():
             product_stories[key] = value['buckets'][0]['doc_count']
 
