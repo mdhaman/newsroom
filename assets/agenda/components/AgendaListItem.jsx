@@ -1,11 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-
+import { get } from 'lodash';
 import ActionButton from 'components/ActionButton';
 
 import AgendaListItemIcons from './AgendaListItemIcons';
-import {hasCoverages, isCanceled, isPostponed, isRescheduled, getName, isWatched} from '../utils';
+import {
+    hasCoverages,
+    isCanceled,
+    isPostponed,
+    isRescheduled,
+    getName,
+    isWatched,
+    getDescription,
+} from '../utils';
 import ActionMenu from '../../components/ActionMenu';
 
 class AgendaListItem extends React.Component {
@@ -40,7 +48,7 @@ class AgendaListItem extends React.Component {
     }
 
     render() {
-        const {item, onClick, onDoubleClick, isExtended, group} = this.props;
+        const {item, onClick, onDoubleClick, isExtended, group, planningItem} = this.props;
         const cardClassName = classNames('wire-articles__item-wrap col-12');
         const wrapClassName = classNames('wire-articles__item wire-articles__item--list', {
             'wire-articles__item--covering': hasCoverages(this.props.item),
@@ -55,12 +63,14 @@ class AgendaListItem extends React.Component {
             'flex-column align-items-start': !isExtended
         });
 
+        const description = getDescription(item, planningItem || {});
+
         return (
             <article key={item._id}
                 className={cardClassName}
                 tabIndex='0'
                 ref={(elem) => this.articleElem = elem}
-                onClick={() => onClick(item, group)}
+                onClick={() => onClick(item, group, planningItem || {})}
                 onDoubleClick={() => onDoubleClick(item, group)}
                 onMouseEnter={() => {
                     this.setState({isHover: true});
@@ -86,11 +96,11 @@ class AgendaListItem extends React.Component {
                             {getName(item)}
                         </h4>
 
-                        <AgendaListItemIcons item={item} group={group} />
+                        <AgendaListItemIcons item={item} group={group} planningItem={planningItem} />
 
-                        {isExtended && item.definition_short && (
+                        {isExtended && description && (
                             <p className="wire-articles__item__text">
-                                {item.definition_short}
+                                {description}
                             </p>
                         )}
 
@@ -144,6 +154,7 @@ AgendaListItem.propTypes = {
     user: PropTypes.string,
     actioningItem: PropTypes.object,
     resetActioningItem: PropTypes.func,
+    planningItem: PropTypes.object,
 };
 
 export default AgendaListItem;

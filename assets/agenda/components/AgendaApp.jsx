@@ -185,6 +185,7 @@ class AgendaApp extends BaseApp {
                             openItemDetails={this.props.openItemDetails}
                             requestCoverage={this.props.requestCoverage}
                             previewGroup={this.props.previewGroup}
+                            previewPlan={this.props.previewPlan}
                         />
                     </div>
                 </section>
@@ -210,6 +211,7 @@ AgendaApp.propTypes = {
     createdFilter: PropTypes.object,
     itemToPreview: PropTypes.object,
     previewGroup: PropTypes.string,
+    previewPlan: PropTypes.object,
     itemToOpen: PropTypes.object,
     itemsById: PropTypes.object,
     modal: PropTypes.object,
@@ -252,6 +254,7 @@ const mapStateToProps = (state) => ({
     createdFilter: get(state, 'search.createdFilter'),
     itemToPreview: state.previewItem ? state.itemsById[state.previewItem] : null,
     previewGroup: state.previewGroup,
+    previewPlan: state.previewPlan,
     itemToOpen: state.openItem ? state.itemsById[state.openItem._id] : null,
     itemsById: state.itemsById,
     modal: state.modal,

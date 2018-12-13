@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
@@ -10,7 +10,7 @@ import AgendaListItem from './AgendaListItem';
 import { setActive, previewItem, toggleSelected, openItem } from '../actions';
 import { EXTENDED_VIEW } from 'wire/defaults';
 import { getIntVersion } from 'wire/utils';
-import { groupItems } from 'agenda/utils';
+import { groupItems, getPlanningItemsByGroup } from 'agenda/utils';
 
 
 const PREVIEW_TIMEOUT = 500; // time to preview an item after selecting using kb
@@ -94,7 +94,7 @@ class AgendaList extends React.Component {
         }
     }
 
-    onItemClick(item, group) {
+    onItemClick(item, group, plan) {
         const itemId = item._id;
         this.setState({actioningItem: null});
         this.cancelPreviewTimeout();
@@ -104,9 +104,9 @@ class AgendaList extends React.Component {
             this.props.dispatch(setActive(itemId));
 
             if (this.props.previewItem !== itemId) {
-                this.props.dispatch(previewItem(item, group));
+                this.props.dispatch(previewItem(item, group, plan));
             } else {
-                this.props.dispatch(previewItem(null, null));
+                this.props.dispatch(previewItem(null, null, null));
             }
         }, CLICK_TIMEOUT);
     }
@@ -152,24 +152,57 @@ class AgendaList extends React.Component {
                 </div>,
 
                 <div className = 'wire-articles__group' key={`${keyDate}group`}>
-                    {this.props.groupedItems[keyDate].map((_id) => <AgendaListItem
-                        key={_id}
-                        group={keyDate}
-                        item={itemsById[_id]}
-                        isActive={activeItem === _id}
-                        isSelected={selectedItems.indexOf(_id) !== -1}
-                        isRead={readItems[_id] === getIntVersion(itemsById[_id])}
-                        onClick={this.onItemClick}
-                        onDoubleClick={this.onItemDoubleClick}
-                        onActionList={this.onActionList}
-                        showActions={!!this.state.actioningItem && this.state.actioningItem._id === _id && keyDate === this.state.activeGroup}
-                        toggleSelected={() => this.props.dispatch(toggleSelected(_id))}
-                        actions={this.filterActions(itemsById[_id])}
-                        isExtended={isExtended}
-                        user={this.props.user}
-                        actioningItem={this.state.actioningItem}
-                        resetActioningItem={this.resetActioningItem}
-                    />)}
+                    {this.props.groupedItems[keyDate].map((_id) => {
+
+                        const plans = getPlanningItemsByGroup(itemsById[_id], keyDate);
+
+                        if (plans.length > 0) {
+                            return (<Fragment>
+                                {
+                                    plans.map((plan) =>
+                                        <AgendaListItem
+                                            key={`${_id}--${plan._id}`}
+                                            group={keyDate}
+                                            item={itemsById[_id]}
+                                            isActive={activeItem === _id}
+                                            isSelected={selectedItems.indexOf(_id) !== -1}
+                                            isRead={readItems[_id] === getIntVersion(itemsById[_id])}
+                                            onClick={this.onItemClick}
+                                            onDoubleClick={this.onItemDoubleClick}
+                                            onActionList={this.onActionList}
+                                            showActions={!!this.state.actioningItem &&
+                                            this.state.actioningItem._id === _id && keyDate === this.state.activeGroup}
+                                            toggleSelected={() => this.props.dispatch(toggleSelected(_id))}
+                                            actions={this.filterActions(itemsById[_id])}
+                                            isExtended={isExtended}
+                                            user={this.props.user}
+                                            actioningItem={this.state.actioningItem}
+                                            planningItem={plan}
+                                            resetActioningItem={this.resetActioningItem} />
+                                    )
+                                }
+                            </Fragment>);
+                        } else {
+                            return (<AgendaListItem
+                                key={_id}
+                                group={keyDate}
+                                item={itemsById[_id]}
+                                isActive={activeItem === _id}
+                                isSelected={selectedItems.indexOf(_id) !== -1}
+                                isRead={readItems[_id] === getIntVersion(itemsById[_id])}
+                                onClick={this.onItemClick}
+                                onDoubleClick={this.onItemDoubleClick}
+                                onActionList={this.onActionList}
+                                showActions={!!this.state.actioningItem && this.state.actioningItem._id === _id && keyDate === this.state.activeGroup}
+                                toggleSelected={() => this.props.dispatch(toggleSelected(_id))}
+                                actions={this.filterActions(itemsById[_id])}
+                                isExtended={isExtended}
+                                user={this.props.user}
+                                actioningItem={this.state.actioningItem}
+                                resetActioningItem={this.resetActioningItem}
+                            />);
+                        }
+                    })}
                 </div>
             ]
         );

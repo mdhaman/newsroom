@@ -8,7 +8,15 @@ import PreviewActionButtons from 'components/PreviewActionButtons';
 
 import Preview from 'ui/components/Preview';
 
-import {hasCoverages, isCanceled, isPostponed, isRescheduled, getInternalNotes} from '../utils';
+import {
+    hasCoverages,
+    isCanceled,
+    isPostponed,
+    isRescheduled,
+    getInternalNote,
+    isCoverageForExtraDay,
+    isCoverageOnPreviousDay,
+} from '../utils';
 import AgendaName from './AgendaName';
 import AgendaTime from './AgendaTime';
 import AgendaMeta from './AgendaMeta';
@@ -32,7 +40,7 @@ class AgendaPreview extends React.PureComponent {
     }
 
     render() {
-        const {item, user, actions, openItemDetails, requestCoverage, previewGroup} = this.props;
+        const {item, user, actions, openItemDetails, requestCoverage, previewGroup, previewPlan} = this.props;
 
         const isWatching = get(item, 'watches', []).includes(user);
 
@@ -45,6 +53,20 @@ class AgendaPreview extends React.PureComponent {
             'wire-column__preview--open': !!item,
             'wire-column__preview--watched': isWatching,
         });
+
+        const currentCoverage = [];
+        const previousCoverage = [];
+        // get current and preview coverages
+        get(item, 'coverages', [])
+            .forEach((coverage) => {
+                if (coverage.planning_id === get(previewPlan, '_id')) {
+                    if (isCoverageForExtraDay(coverage, previewGroup)) {
+                        currentCoverage.push(coverage);
+                    } else if (isCoverageOnPreviousDay(coverage, previewGroup)) {
+                        previousCoverage.push(coverage)
+                    }
+                }
+            });
 
         return (
             <div className={previewClassName}>
@@ -59,12 +81,14 @@ class AgendaPreview extends React.PureComponent {
                             <AgendaTime item={item} group={previewGroup} />
                             <AgendaPreviewImage item={item} onClick={openItemDetails} />
                             <AgendaMeta item={item} />
-                            <AgendaLongDescription item={item} />
-                            <AgendaPreviewCoverages item={item} />
+                            <AgendaLongDescription item={item} plan={previewPlan}/>
+                            <AgendaPreviewCoverages item={item}
+                                currentCoverage={currentCoverage}
+                                previousCoverage={previousCoverage} />
                             <AgendaCoverageRequest item={item} requestCoverage={requestCoverage}/>
                             <AgendaPreviewAttachments item={item} />
-                            <AgendaEdNote item={item} />
-                            <AgendaInternalNote internalNotes={getInternalNotes(item)} />
+                            <AgendaEdNote item={item} plan={previewPlan || {}}/>
+                            <AgendaInternalNote internalNote={getInternalNote(item, previewPlan || {})} />
                         </div>
                     </Preview>
                 }
@@ -86,6 +110,7 @@ AgendaPreview.propTypes = {
     openItemDetails: PropTypes.func,
     requestCoverage: PropTypes.func,
     previewGroup: PropTypes.string,
+    previewPlan: PropTypes.object,
 };
 
 export default AgendaPreview;

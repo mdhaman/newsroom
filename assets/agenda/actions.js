@@ -38,8 +38,8 @@ export function setActive(item) {
 }
 
 export const PREVIEW_ITEM = 'PREVIEW_ITEM';
-export function preview(item, group) {
-    return {type: PREVIEW_ITEM, item, group};
+export function preview(item, group, plan) {
+    return {type: PREVIEW_ITEM, item, group, plan};
 }
 
 export function previewAndCopy(item) {
@@ -49,10 +49,10 @@ export function previewAndCopy(item) {
     };
 }
 
-export function previewItem(item, group) {
+export function previewItem(item, group, plan) {
     return (dispatch, getState) => {
         markItemAsRead(item, getState());
-        dispatch(preview(item, group));
+        dispatch(preview(item, group, plan));
         item && analytics.itemEvent('preview', item);
     };
 }

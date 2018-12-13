@@ -23,6 +23,7 @@ const initialState = {
     activeItem: null,
     previewItem: null,
     previewGroup: null,
+    previewPlan: null,
     openItem: null,
     isLoading: false,
     resultsFiltered: false,
