@@ -183,6 +183,9 @@ class AgendaList extends React.Component {
                                 }
                             </Fragment>);
                         } else {
+                            const plan = !get(itemsById[_id], 'event') ?
+                                get(itemsById[_id], 'planning_items[0]', {}) : {};
+
                             return (<AgendaListItem
                                 key={_id}
                                 group={keyDate}
@@ -200,6 +203,7 @@ class AgendaList extends React.Component {
                                 user={this.props.user}
                                 actioningItem={this.state.actioningItem}
                                 resetActioningItem={this.resetActioningItem}
+                                planningItem={plan}
                             />);
                         }
                     })}

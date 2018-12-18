@@ -238,10 +238,10 @@ def publish_planning(planning):
         agenda = init_adhoc_agenda(planning)
 
     # update agenda metadata
-    set_agenda_metadata_from_planning(agenda, planning)
+    insert = set_agenda_metadata_from_planning(agenda, planning)
 
     # add the planning item to the list
-    set_agenda_planning_items(agenda, planning, action='add')
+    set_agenda_planning_items(agenda, planning, action='add' if insert else 'update')
 
     if not agenda.get('_id'):
         # setting _id of agenda to be equal to planning if there's no event id
@@ -327,32 +327,43 @@ def set_agenda_metadata_from_planning(agenda, planning_item):
     def get(key):
         return event.get(key) or planning_item.get(key) or agenda.get(key)
 
-    agenda['name'] = get('name')
-    agenda['headline'] = get('headline')
-    agenda['slugline'] = get('slugline')
-    agenda['abstract'] = get('abstract')
-    agenda['ednote'] = get('ednote')
-    agenda['place'] = get('place')
-    agenda['subject'] = get('subject')
-    agenda['products'] = get('products')
-    agenda['genre'] = planning_item.get('genre') or agenda.get('genre')
-    agenda['priority'] = planning_item.get('priority') or agenda.get('priority')
-    agenda['urgency'] = planning_item.get('urgency') or agenda.get('urgency')
-    agenda['definition_short'] = event.get('definition_short') \
-        or planning_item.get('description_text') \
-        or agenda.get('definition_short')
-    agenda['definition_long'] = event.get('definition_long') \
-        or planning_item.get('abstract') \
-        or agenda.get('definition_long')
+    if not event:
+        agenda['name'] = get('name')
+        agenda['headline'] = get('headline')
+        agenda['slugline'] = get('slugline')
+        agenda['ednote'] = get('ednote')
+        agenda['place'] = get('place')
+        agenda['subject'] = format_qcode_items(get('subject'))
+        agenda['products'] = get('products')
+        agenda['definition_short'] = planning_item.get('description_text') or agenda.get('definition_short')
+        agenda['definition_long'] = planning_item.get('abstract') or agenda.get('definition_long')
+        agenda['service'] = format_qcode_items(planning_item.get('anpa_category'))
 
-    service = unique_codes(
-        format_qcode_items(planning_item.get('anpa_category')),
-        format_qcode_items(event.get('anpa_category')),
-        format_qcode_items(agenda.get('service'))
-    )
+    if not agenda.get('planning_items'):
+        agenda['planning_items'] = []
 
-    if service:
-        agenda['service'] = service
+    plan = next((p for p in agenda['planning_items'] if p.get('guid') == planning_item.get('guid')), None)
+    insert = False
+    if not plan:
+        insert = True
+        plan = {}
+
+    plan['guid'] = planning_item['guid']
+    plan['name'] = planning_item.get('name')
+    plan['headline'] = planning_item.get('headline')
+    plan['slugline'] = planning_item.get('slugline')
+    plan['ednote'] = planning_item.get('ednote')
+    plan['internal_note'] = planning_item.get('internal_note')
+    plan['subject'] = format_qcode_items(planning_item.get('subject'))
+    plan['place'] = planning_item['place']
+    plan['urgency'] = planning_item['urgency']
+    plan['service'] = format_qcode_items(planning_item.get('anpa_category'))
+    plan['definition_short'] = planning_item.get('description_text')
+    plan['planning_date'] = planning_item['planning_date']
+    plan['coverages'] = planning_item['coverages']
+    if insert:
+        agenda['planning_items'].append(plan)
+    return insert
 
 
 def set_agenda_planning_items(agenda, planning_item, action='add'):
@@ -360,17 +371,13 @@ def set_agenda_planning_items(agenda, planning_item, action='add'):
     Updates the list of planning items of agenda. If action is 'add' then adds the new one.
     And updates the list of coverages
     """
-    existing_planning_items = deepcopy(agenda.get('planning_items', []))
-    agenda['planning_items'] = [p for p in existing_planning_items if p['guid'] != planning_item['guid']] or []
-
     if action == 'add':
-        if len(existing_planning_items) == len(agenda['planning_items']):
-            # planning item is newly added
-            superdesk.get_resource_service('agenda').notify_agenda_update('planning_added', agenda)
-
-        agenda['planning_items'].append(planning_item)
+        # planning item is newly added
+        superdesk.get_resource_service('agenda').notify_agenda_update('planning_added', agenda)
 
     if action == 'remove':
+        existing_planning_items = deepcopy(agenda.get('planning_items', []))
+        agenda['planning_items'] = [p for p in existing_planning_items if p['guid'] != planning_item['guid']] or []
         superdesk.get_resource_service('agenda').notify_agenda_update('planning_cancelled', agenda)
 
     agenda['coverages'], coverage_changes = get_coverages(agenda['planning_items'], agenda.get('coverages', []))
@@ -453,7 +460,7 @@ def get_coverages(planning_items, original_coverages=[]):
             set_text_delivery(new_coverage, coverage.get('deliveries'))
             coverages.append(new_coverage)
 
-            if original_coverages and not existing_coverage:
+            if not existing_coverage:
                 coverage_changes['coverage_added'] = True
 
     return coverages, coverage_changes

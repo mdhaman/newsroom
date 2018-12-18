@@ -8,8 +8,7 @@ from planning.common import WORKFLOW_STATE_SCHEMA
 from planning.events.events_schema import events_schema
 from planning.planning.planning import planning_schema
 from superdesk import get_resource_service
-from superdesk.metadata.item import not_analyzed
-from superdesk.resource import Resource, not_enabled
+from superdesk.resource import Resource, not_enabled, not_analyzed, not_indexed
 from superdesk.utils import ListCursor
 
 import newsroom
@@ -74,23 +73,30 @@ class AgendaResource(newsroom.Resource):
         'mapping': not_analyzed,
         'nullable': True,
     }
+    schema['type'] = {
+        'type': 'string',
+        'mapping': not_analyzed,
+        'nullable': False,
+    }
+
+    # to be used to filter out duplicate planned event documents
+    schema['planned'] = {'type': 'boolean', 'nullable': False}
 
     # content metadata
     schema['name'] = events_schema['name']
-    schema['slugline'] = not_analyzed
-    schema['definition_short'] = events_schema['definition_short']
+    schema['slugline'] = {'type': 'string', 'mapping': 'not_analyzed'},
+    schema['description_short'] = events_schema['definition_short']
     schema['definition_long'] = events_schema['definition_long']
-    schema['abstract'] = planning_schema['abstract']
     schema['headline'] = planning_schema['headline']
     schema['firstcreated'] = events_schema['firstcreated']
     schema['version'] = events_schema['version']
     schema['versioncreated'] = events_schema['versioncreated']
     schema['ednote'] = events_schema['ednote']
+    schema['state_reason'] = events_schema['state_reason']
+    schema['internal_note'] = {'type': 'string', 'mapping': not_indexed}
 
     # aggregated fields
-    schema['genre'] = planning_schema['genre']
-    schema['subject'] = planning_schema['subject']
-    schema['priority'] = planning_schema['priority']
+    schema['subject'] = code_mapping
     schema['urgency'] = planning_schema['urgency']
     schema['place'] = planning_schema['place']
     schema['service'] = code_mapping
@@ -109,17 +115,17 @@ class AgendaResource(newsroom.Resource):
     schema['display_dates'] = {
         'type': 'list',
         'nullable': True,
-        'mappping': {
+        'schema': {
             'type': 'dict',
             'schema': {
-                'date': {'type': 'datetime'},
+                'date': {'type': 'datetime'}
             }
         }
     }
 
     # coverages
     schema['coverages'] = {
-        'type': 'object',
+        'type': 'list',
         'mapping': {
             'type': 'nested',
             'properties': {
@@ -132,6 +138,9 @@ class AgendaResource(newsroom.Resource):
                 'coverage_provider': not_analyzed,
                 'delivery_id': not_analyzed,
                 'delivery_href': not_analyzed,
+                'internal_note': not_indexed,
+                'ednote': not_indexed,
+                'slugline': not_indexed
             },
         },
     }
@@ -154,14 +163,20 @@ class AgendaResource(newsroom.Resource):
 
     # event details
     schema['event'] = {
-        'type': 'object',
-        'mapping': not_enabled,
-    }
-
-    # planning details which can be more than one per event
-    schema['planning_items'] = {
-        'type': 'list',
-        'mapping': not_enabled,
+        'type': 'dict',
+        'schema': {
+            'definition_long': events_schema['definition_long'],
+            'definition_short': events_schema['definition_short'],
+            'internal_note': {'type': 'string', 'mapping': not_indexed},
+            'name': events_schema['name'],
+            'slugline': {'type': 'string', 'mapping': not_analyzed},
+            'ednote': events_schema['ednote'],
+            'firstcreated': events_schema['firstcreated'],
+            'version': events_schema['version'],
+            'versioncreated': events_schema['versioncreated'],
+            'state_reason': {'type': 'string'},
+            'state': WORKFLOW_STATE_SCHEMA,
+        }
     }
 
     schema['bookmarks'] = Resource.not_analyzed_field('list')  # list of user ids who bookmarked this item
@@ -231,10 +246,8 @@ def _display_date_range(args):
 aggregations = {
     'calendar': {'terms': {'field': 'calendars.name', 'size': 0}},
     'location': {'terms': {'field': 'location.name', 'size': 0}},
-    'genre': {'terms': {'field': 'genre.name', 'size': 50}},
     'service': {'terms': {'field': 'service.name', 'size': 50}},
     'subject': {'terms': {'field': 'subject.name', 'size': 20}},
-    'urgency': {'terms': {'field': 'urgency'}},
     'place': {'terms': {'field': 'place.name', 'size': 50}},
     'coverage': {
         'nested': {'path': 'coverages'},

@@ -14,8 +14,6 @@ import {
     isPostponed,
     isRescheduled,
     getInternalNote,
-    isCoverageForExtraDay,
-    isCoverageOnPreviousDay,
 } from '../utils';
 import AgendaName from './AgendaName';
 import AgendaTime from './AgendaTime';
@@ -54,20 +52,6 @@ class AgendaPreview extends React.PureComponent {
             'wire-column__preview--watched': isWatching,
         });
 
-        const currentCoverage = [];
-        const previousCoverage = [];
-        // get current and preview coverages
-        get(item, 'coverages', [])
-            .forEach((coverage) => {
-                if (coverage.planning_id === get(previewPlan, '_id')) {
-                    if (isCoverageForExtraDay(coverage, previewGroup)) {
-                        currentCoverage.push(coverage);
-                    } else if (isCoverageOnPreviousDay(coverage, previewGroup)) {
-                        previousCoverage.push(coverage)
-                    }
-                }
-            });
-
         return (
             <div className={previewClassName}>
                 {item &&
@@ -83,8 +67,8 @@ class AgendaPreview extends React.PureComponent {
                             <AgendaMeta item={item} />
                             <AgendaLongDescription item={item} plan={previewPlan}/>
                             <AgendaPreviewCoverages item={item}
-                                currentCoverage={currentCoverage}
-                                previousCoverage={previousCoverage} />
+                                planningId={get(previewPlan, '_id')}
+                                group={previewGroup}/>
                             <AgendaCoverageRequest item={item} requestCoverage={requestCoverage}/>
                             <AgendaPreviewAttachments item={item} />
                             <AgendaEdNote item={item} plan={previewPlan || {}}/>
