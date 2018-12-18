@@ -70,6 +70,14 @@ def get_type():
     return types[item_type]
 
 
+def parse_str_date(date):
+    if isinstance(date, datetime):
+        return date
+    if date and isinstance(date, str):
+        return parse_date(date)
+    return date
+
+
 def parse_dates(item):
     for field in ['firstcreated', 'versioncreated']:
         if item.get(field) and type(item[field]) == str:

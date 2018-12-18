@@ -84,7 +84,7 @@ class AgendaResource(newsroom.Resource):
 
     # content metadata
     schema['name'] = events_schema['name']
-    schema['slugline'] = {'type': 'string', 'mapping': 'not_analyzed'},
+    schema['slugline'] = {'type': 'string', 'mapping': not_analyzed}
     schema['description_short'] = events_schema['definition_short']
     schema['definition_long'] = events_schema['definition_long']
     schema['headline'] = planning_schema['headline']
@@ -92,7 +92,7 @@ class AgendaResource(newsroom.Resource):
     schema['version'] = events_schema['version']
     schema['versioncreated'] = events_schema['versioncreated']
     schema['ednote'] = events_schema['ednote']
-    schema['state_reason'] = events_schema['state_reason']
+    schema['state_reason'] = {'type': 'string'}
     schema['internal_note'] = {'type': 'string', 'mapping': not_indexed}
 
     # aggregated fields
@@ -506,3 +506,18 @@ class AgendaService(newsroom.Service):
         set_saved_items_query(query, str(user['_id']))
         cursor = self.get_items_by_query(query, size=0)
         return cursor.count()
+
+    def get_planning_items_for_event(self, event_id):
+        if not event_id:
+            return []
+
+        query = {
+            'bool': {
+                'must': [
+                    {'term': {'event_id': event_id}},
+                    {'term': {'type': 'planning'}}
+                ]
+            }
+        }
+
+        return self.get_items_by_query(query, size=0)
