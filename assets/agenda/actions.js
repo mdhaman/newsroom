@@ -552,6 +552,7 @@ export function initParams(params) {
         if (params.get('q')) {
             dispatch(setQuery(params.get('q')));
         }
+
         if (params.get('item')) {
             dispatch(fetchItem(params.get('item')))
                 .then(() => {
